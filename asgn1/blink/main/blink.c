@@ -29,7 +29,7 @@ static led_strip_handle_t led_strip;
 static void blink_led(void *pvParameter)
 {
     while (1) {
-        ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "ON");
+        ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "OFF" : "ON");
         /* Toggle the LED state */
 
     	/* If the addressable LED is enabled */
