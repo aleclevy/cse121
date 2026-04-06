@@ -1,3 +1,0 @@
--march=rv32imc_zicsr_zifencei
--mtune=esp-base
-"-specs=/home/alevy1/esp/hello_world/build/specs/picolibc.specs"
