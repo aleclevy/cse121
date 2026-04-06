@@ -1,0 +1,9 @@
+Command: cmake -G Ninja -B /home/alevy1/esp/blink/build -DPYTHON_DEPS_CHECKED=1 -DPYTHON=/home/alevy1/.espressif/python_env/idf6.1_py3.12_env/bin/python -DESP_PLATFORM=1 -DIDF_TARGET=esp32c3 -DCCACHE_ENABLE=False /home/alevy1/esp/blink
+Configuration Report               
+ ───────────────────────────────── 
+   Parser Version: 1               
+   Verbosity: default              
+   Defaults policy: sdkconfig      
+   Status: Finished successfully   
+                                   
+ ───────────────────────────────── 
