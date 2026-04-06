@@ -1,0 +1,2 @@
+source /home/alevy1/esp/blink/build/gdbinit/symbols
+source /home/alevy1/esp/blink/build/gdbinit/connect
