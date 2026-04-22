@@ -7,10 +7,8 @@
 
 static const char *TAG = "example";
 
-#define I2C_MASTER_SCL_IO           CONFIG_I2C_MASTER_SCL
-#define I2C_MASTER_SDA_IO           CONFIG_I2C_MASTER_SDA
 #define I2C_MASTER_NUM              I2C_NUM_0
-#define I2C_MASTER_FREQ_HZ          CONFIG_I2C_MASTER_FREQUENCY
+#define I2C_MASTER_FREQ_HZ          10000
 #define I2C_MASTER_TIMEOUT_MS       1000
 #define SENSOR_ADDR                 0x70
 
