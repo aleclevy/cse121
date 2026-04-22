@@ -114,12 +114,13 @@ void app_main(void)
     start_measurement(dev_handle);
     vTaskDelay(pdMS_TO_TICKS(13));
 
-    esp_err_t ret = i2c_master_receive(dev_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
-    if (ret != ESP_OK) {
-        sensor_sleep(dev_handle);
-        vTaskDelay(pdMS_TO_TICKS(2000));
-        continue;
-    }
+   esp_err_t ret = i2c_master_receive(dev_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
+if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Read failed: %s", esp_err_to_name(ret));  // add this
+    sensor_sleep(dev_handle);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    continue;
+}
 
     read_humidity(dev_handle, &rh_out, &buf[0]); 
     read_temperature(dev_handle, &rt_out, &buf[3]); 
