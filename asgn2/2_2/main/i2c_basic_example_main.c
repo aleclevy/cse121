@@ -39,8 +39,8 @@ static esp_err_t sensor_sleep(i2c_master_dev_handle_t dev_handle){
 }
 
 static esp_err_t start_measurement(i2c_master_dev_handle_t dev_handle){
-	uint8_t cmd[2] = {0x58, 0xE0};
-	return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
+    uint8_t cmd[2] = {0x5C, 0x24};  
+    return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
 }
 
 static uint8_t shtc3_crc8(uint8_t *data, size_t len) {
