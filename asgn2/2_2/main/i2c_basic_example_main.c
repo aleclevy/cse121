@@ -16,7 +16,9 @@ static const char *TAG = "example";
 
 static esp_err_t sensor_wakeup(i2c_master_dev_handle_t dev_handle) {
     uint8_t cmd[2] = {0x35, 0x17};
-    return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
+    i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
+    vTaskDelay(pdMS_TO_TICKS(2));
+    return ESP_OK;
 }
 
 static esp_err_t sensor_sleep(i2c_master_dev_handle_t dev_handle) {
@@ -66,7 +68,7 @@ static esp_err_t read_temperature(int *rt_out, uint8_t *raw_buf) {
 static void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *dev_handle) {
     i2c_master_bus_config_t bus_config = {
         .i2c_port = I2C_NUM_0,
-        .sda_io_num = 10,
+        .sda_io_num = 7,
         .scl_io_num = 8,
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
@@ -87,7 +89,7 @@ void app_main(void) {
     i2c_master_dev_handle_t dev_handle;
     i2c_master_init(&bus_handle, &dev_handle);
     ESP_LOGI(TAG, "I2C initialized successfully");
-    ESP_LOGI(TAG, "SCL=%d SDA=%d FREQ=%d", I2C_MASTER_SCL_IO, I2C_MASTER_SDA_IO, I2C_MASTER_FREQ_HZ);
+    vTaskDelay(pdMS_TO_TICKS(50));
 
     while (1) {
         int rt_out = 0, rh_out = 0;
