@@ -39,8 +39,8 @@ static esp_err_t sensor_sleep(i2c_master_dev_handle_t dev_handle){
 }
 
 static esp_err_t start_measurement(i2c_master_dev_handle_t dev_handle){
-    uint8_t cmd[2] = {0x5C, 0x24};  
-    return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
+	uint8_t cmd[2] = {0x58, 0xE0};
+	return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
 }
 
 static uint8_t shtc3_crc8(uint8_t *data, size_t len) {
@@ -58,24 +58,30 @@ static uint8_t shtc3_crc8(uint8_t *data, size_t len) {
     return crc;
 }
 
-static esp_err_t read_humidity(i2c_master_dev_handle_t dev_handle, int *rh_out, uint8_t *raw_buf) {
-    if (shtc3_crc8(raw_buf, 2) != raw_buf[2]) {
-        ESP_LOGE(TAG, "Humidity CRC fail");
-        return ESP_ERR_INVALID_CRC;
-    }
-    uint16_t raw = (raw_buf[0] << 8) | raw_buf[1];
-    *rh_out = (int)(100.0f * raw / 65535.0f);
-    return ESP_OK;
+static esp_err_t read_temperature(i2c_master_dev_handle_t dev_handle, int *rt_out){
+	uint8_t buf[3];
+	esp_err_t ret = i2c_master_receive(dev_handle, buf, 3, I2C_MASTER_TIMEOUT_MS);
+	if(ret != ESP_OK) return ret;
+	//add checksum here
+	if(shtc3_crc8(buf, 2) != buf[2]){
+		return ESP_ERR_INVALID_CRC;
+	}
+	uint16_t raw = (buf[0] << 8) | buf[1];
+	*rt_out = (int)(-45.0f +175.0f*(raw/65535.0f));
+	return ESP_OK;
 }
 
-static esp_err_t read_temperature(i2c_master_dev_handle_t dev_handle, int *rt_out, uint8_t *raw_buf) {
-    if (shtc3_crc8(raw_buf, 2) != raw_buf[2]) {
-        ESP_LOGE(TAG, "Temperature CRC fail");
-        return ESP_ERR_INVALID_CRC;
-    }
-    uint16_t raw = (raw_buf[0] << 8) | raw_buf[1];
-    *rt_out = (int)(-45.0f + 175.0f * raw / 65535.0f);
-    return ESP_OK;
+static esp_err_t read_humidity(i2c_master_dev_handle_t dev_handle, int *rh_out){
+	uint8_t buf[3];
+	esp_err_t ret = i2c_master_receive(dev_handle, buf, 3, I2C_MASTER_TIMEOUT_MS);
+	if(ret != ESP_OK) return ret;
+	//add checksum here
+	if(shtc3_crc8(buf, 2) != buf[2]){
+		return ESP_ERR_INVALID_CRC;
+	}
+	uint16_t raw = (buf[0] << 8) | buf[1];
+	*rh_out = (int)(100.0f * raw)/(65535.0f);
+	return ESP_OK;
 }
 
 static void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_handle_t *dev_handle)
@@ -105,44 +111,21 @@ void app_main(void)
     i2c_master_dev_handle_t dev_handle;
     i2c_master_init(&bus_handle, &dev_handle);
     ESP_LOGI(TAG, "I2C initialized successfully");
+    while(1){
+    	int rt_out, rh_out;
+    	sensor_wakeup(dev_handle);
+	vTaskDelay(pdMS_TO_TICKS(1));
+    	start_measurement(dev_handle);
+	vTaskDelay(pdMS_TO_TICKS(13));
+	read_humidity(dev_handle, &rh_out);
+	read_temperature(dev_handle, &rt_out);
+	sensor_sleep(dev_handle);
 
-    // add this once before the while loop
-ESP_LOGI(TAG, "Scanning I2C bus...");
-for (uint8_t addr = 1; addr < 127; addr++) {
-    i2c_master_dev_handle_t scan_handle;
-    i2c_device_config_t scan_config = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = addr,
-        .scl_speed_hz = 100000,
-    };
-    if (i2c_master_bus_add_device(bus_handle, &scan_config, &scan_handle) == ESP_OK) {
-        uint8_t dummy;
-        if (i2c_master_receive(scan_handle, &dummy, 1, 100) == ESP_OK) {
-            ESP_LOGI(TAG, "Found device at 0x%02X", addr);
-        }
-        i2c_master_bus_rm_device(scan_handle);
+	int temp_f = (rt_out * 9/5) +32;
+
+	printf("Temperature is %dC (or %dF) and Humidity is %d%% \n", rt_out, temp_f, rh_out);
+	vTaskDelay(pdMS_TO_TICKS(2000));
     }
-}
-while (1) {
-    esp_err_t ret;
-    uint8_t buf[6];
-
-    ret = sensor_wakeup(dev_handle);
-    ESP_LOGI(TAG, "Wakeup: %s", esp_err_to_name(ret));
-    vTaskDelay(pdMS_TO_TICKS(2));
-
-    ret = start_measurement(dev_handle);
-    ESP_LOGI(TAG, "Measurement: %s", esp_err_to_name(ret));
-    vTaskDelay(pdMS_TO_TICKS(15));
-
-    ret = i2c_master_receive(dev_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
-    ESP_LOGI(TAG, "Read: %s", esp_err_to_name(ret));
-    ESP_LOGI(TAG, "Raw bytes: %02X %02X %02X %02X %02X %02X",
-             buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-
-    sensor_sleep(dev_handle);
-    vTaskDelay(pdMS_TO_TICKS(2000));
-}
 
     ESP_ERROR_CHECK(i2c_master_bus_rm_device(dev_handle));
     ESP_ERROR_CHECK(i2c_del_master_bus(bus_handle));
