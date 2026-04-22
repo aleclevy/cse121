@@ -28,17 +28,17 @@ static const char *TAG = "example";
 
 #define SENSOR_ADDR         0x70        /*!< Address of the MPU9250 sensor */
 
-void sensor_wakeup(i2c_master_dev_handle_t dev_handle){
+static esp_err_t sensor_wakeup(i2c_master_dev_handle_t dev_handle){
     uint8_t cmd[2] = {0x35, 0x17};
     return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
 }
 
-void sensor_sleep(i2c_master_dev_handle_t dev_handle){
+static esp_err_t sensor_sleep(i2c_master_dev_handle_t dev_handle){
     uint8_t cmd[2] = {0xB0, 0x98};
     return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
 }
 
-void start_measurement(i2c_master_dev_handle_t dev_handle){
+static esp_err_t start_measurement(i2c_master_dev_handle_t dev_handle){
 	uint8_t cmd[2] = {0x58, 0xE0};
 	return i2c_master_transmit(dev_handle, cmd, 2, I2C_MASTER_TIMEOUT_MS);
 }
@@ -58,7 +58,7 @@ static uint8_t shtc3_crc8(uint8_t *data, size_t len) {
     return crc;
 }
 
-void read_temperature(i2c_master_dev_handle_t dev_handle, int *rt_out){
+static esp_err_t read_temperature(i2c_master_dev_handle_t dev_handle, int *rt_out){
 	uint8_t buf[3];
 	esp_err_t ret = i2c_master_receive(dev_handle, buf, 3, I2C_MASTER_TIMEOUT_MS);
 	if(ret != ESP_OK) return ret;
@@ -67,11 +67,11 @@ void read_temperature(i2c_master_dev_handle_t dev_handle, int *rt_out){
 		return ESP_ERR_INVALID_CRC;
 	}
 	uint16_t raw = (buf[0] << 8) | buf[1];
-	*rt_out = (int)(-45.0f +175.0f*(raw/65536.0f));
+	*rt_out = (int)(-45.0f +175.0f*(raw/65535.0f));
 	return ESP_OK;
 }
 
-void read_humidity(i2c_master_dev_handle_t dev_handle, int *rh_out){
+static esp_err_t read_humidity(i2c_master_dev_handle_t dev_handle, int *rh_out){
 	uint8_t buf[3];
 	esp_err_t ret = i2c_master_receive(dev_handle, buf, 3, I2C_MASTER_TIMEOUT_MS);
 	if(ret != ESP_OK) return ret;
@@ -80,7 +80,7 @@ void read_humidity(i2c_master_dev_handle_t dev_handle, int *rh_out){
 		return ESP_ERR_INVALID_CRC;
 	}
 	uint16_t raw = (buf[0] << 8) | buf[1];
-	*rh_out = (int)(100.0f * raw)/(65536.0f);
+	*rh_out = (int)(100.0f * raw)/(65535.0f);
 	return ESP_OK;
 }
 
@@ -107,8 +107,6 @@ static void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_
 void app_main(void)
 {
 
-
-    uint8_t data[2];
     i2c_master_bus_handle_t bus_handle;
     i2c_master_dev_handle_t dev_handle;
     i2c_master_init(&bus_handle, &dev_handle);
@@ -116,15 +114,16 @@ void app_main(void)
     while(1){
     	int rt_out, rh_out;
     	sensor_wakeup(dev_handle);
+	vTaskDelay(pdMS_TO_TICKS(1));
     	start_measurement(dev_handle);
-
+	vTaskDelay(pdMS_TO_TICKS(13));
 	read_humidity(dev_handle, &rh_out);
 	read_temperature(dev_handle, &rt_out);
 	sensor_sleep(dev_handle);
 
-	int temp_f = (rt_out * (9/5)) +32;
+	int temp_f = (rt_out * 9/5) +32;
 
-	printf("Temperature is %dC (or %dF) and Humidity is %d", rt_out, temp_f, rh_out);
+	printf("Temperature is %dC (or %dF) and Humidity is %d%% \n", rt_out, temp_f, rh_out);
 	vTaskDelay(pdMS_TO_TICKS(2000));
     }
 
