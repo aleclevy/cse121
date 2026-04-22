@@ -105,6 +105,24 @@ void app_main(void)
     i2c_master_dev_handle_t dev_handle;
     i2c_master_init(&bus_handle, &dev_handle);
     ESP_LOGI(TAG, "I2C initialized successfully");
+
+    // add this once before the while loop
+ESP_LOGI(TAG, "Scanning I2C bus...");
+for (uint8_t addr = 1; addr < 127; addr++) {
+    i2c_master_dev_handle_t scan_handle;
+    i2c_device_config_t scan_config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = addr,
+        .scl_speed_hz = 100000,
+    };
+    if (i2c_master_bus_add_device(bus_handle, &scan_config, &scan_handle) == ESP_OK) {
+        uint8_t dummy;
+        if (i2c_master_receive(scan_handle, &dummy, 1, 100) == ESP_OK) {
+            ESP_LOGI(TAG, "Found device at 0x%02X", addr);
+        }
+        i2c_master_bus_rm_device(scan_handle);
+    }
+}
 while (1) {
     esp_err_t ret;
     uint8_t buf[6];
