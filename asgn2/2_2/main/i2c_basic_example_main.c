@@ -105,29 +105,24 @@ void app_main(void)
     i2c_master_dev_handle_t dev_handle;
     i2c_master_init(&bus_handle, &dev_handle);
     ESP_LOGI(TAG, "I2C initialized successfully");
-   while (1) {
-    int rt_out, rh_out;
+while (1) {
+    esp_err_t ret;
     uint8_t buf[6];
 
-    sensor_wakeup(dev_handle);
-    vTaskDelay(pdMS_TO_TICKS(1));
-    start_measurement(dev_handle);
-    vTaskDelay(pdMS_TO_TICKS(13));
+    ret = sensor_wakeup(dev_handle);
+    ESP_LOGI(TAG, "Wakeup: %s", esp_err_to_name(ret));
+    vTaskDelay(pdMS_TO_TICKS(2));
 
-   esp_err_t ret = i2c_master_receive(dev_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
-if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Read failed: %s", esp_err_to_name(ret));  // add this
+    ret = start_measurement(dev_handle);
+    ESP_LOGI(TAG, "Measurement: %s", esp_err_to_name(ret));
+    vTaskDelay(pdMS_TO_TICKS(15));
+
+    ret = i2c_master_receive(dev_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
+    ESP_LOGI(TAG, "Read: %s", esp_err_to_name(ret));
+    ESP_LOGI(TAG, "Raw bytes: %02X %02X %02X %02X %02X %02X",
+             buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+
     sensor_sleep(dev_handle);
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    continue;
-}
-
-    read_humidity(dev_handle, &rh_out, &buf[0]); 
-    read_temperature(dev_handle, &rt_out, &buf[3]); 
-    sensor_sleep(dev_handle);
-
-    int temp_f = (rt_out * 9 / 5) + 32;
-    printf("Temperature is %dC (or %dF) and Humidity is %d%%\n", rt_out, temp_f, rh_out);
     vTaskDelay(pdMS_TO_TICKS(2000));
 }
 
