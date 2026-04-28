@@ -410,7 +410,7 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(i2c_master_bus_add_device(bus, &sensor_cfg, &sensor_handle));
 
     lcd.init(bus);
-    lcd.setRGB(0,255,0);
+    lcd.setRGB(255,0,90);
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     while (1) {
@@ -418,22 +418,21 @@ extern "C" void app_main(void) {
         uint8_t buf[6];
 	char line[17];
 	sensor_wakeup(sensor_handle);
-        vTaskDelay(pdMS_TO_TICKS(2));
+        vTaskDelay(pdMS_TO_TICKS(10));
 	start_measurement(sensor_handle);
-        vTaskDelay(pdMS_TO_TICKS(15));
+        vTaskDelay(pdMS_TO_TICKS(55));
 
-        esp_err_t ret = i2c_master_receive(sensor_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
-
+	esp_err_t ret = i2c_master_receive(sensor_handle, buf, 6, I2C_MASTER_TIMEOUT_MS);
         if (ret == ESP_OK) {
             read_humidity(&rh_out, &buf[0]);
             read_temperature(&rt_out, &buf[3]);
-	    lcd.clear();
 	    lcd.setCursor(0,0);
-	    snprintf(line, sizeof(line), "Temp: %dC", rt_out);
+	    snprintf(line, sizeof(line), "Temp: %3dC", rt_out);
+
 	    lcd.printstr(line);
 
 	    lcd.setCursor(0,1);
-	    snprintf(line, sizeof(line), "Hum: %d%%", rh_out);
+	    snprintf(line, sizeof(line), "Hum: %3d%%", rh_out);
 	    lcd.printstr(line);
         }
 

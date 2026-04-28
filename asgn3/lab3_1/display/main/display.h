@@ -14,7 +14,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 
 /*!
  *  @brief Device I2C Arress
@@ -22,7 +22,7 @@
 #define I2C_MASTER_NUM I2C_NUM_0
 #define I2C_MASTER_SDA_IO 7
 #define I2C_MASTER_SCL_IO 8
-#define I2C_MASTER_FREQ_HZ 10000
+#define I2C_MASTER_FREQ_HZ 100000
 #define LCD_ADDRESS     (0x7c>>1)
 
 /*!
@@ -248,7 +248,7 @@ public:
    * @brief write character
    * @param data the written data
    */
-  virtual size_t write(uint8_t data);
+  void write(uint8_t data);
 
   /**
    * @fn command
@@ -263,7 +263,6 @@ public:
    * @param mode  true indicates the backlight is turned on and set to white, false indicates the backlight is turned off
    */
   void setBacklight(bool mode);
-  using Print::write;
   
 private:
   void i2c_master_init();
@@ -301,8 +300,6 @@ private:
   uint8_t _RGBAddr;
   uint8_t _cols;
   uint8_t _rows;
-  // initialize handlers
-  TwoWire *_pWire;
 public:
   uint8_t REG_RED      =   0 ;       // pwm2
   uint8_t REG_GREEN    =   0 ;       // pwm1
