@@ -14,11 +14,15 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-#include <
+#include "driver/i2c.h"
 
 /*!
  *  @brief Device I2C Arress
  */
+#define I2C_MASTER_NUM I2C_NUM_0
+#define I2C_MASTER_SDA_IO 7
+#define I2C_MASTER_SCL_IO 8
+#define I2C_MASTER_FREQ_HZ 10000
 #define LCD_ADDRESS     (0x7c>>1)
 
 /*!
@@ -93,7 +97,7 @@ public:
    * replace two wire with bus handle
    * inside 
    */
-  DFRobot_RGBLCD1602(uint8_t RGBAddr,uint8_t lcdCols=16,uint8_t lcdRows=2,TwoWire *pWire=&Wire,uint8_t lcdAddr=LCD_ADDRESS);
+  DFRobot_RGBLCD1602(uint8_t RGBAddr,uint8_t lcdCols=16,uint8_t lcdRows=2,uint8_t lcdAddr=LCD_ADDRESS);
 
   /**
    * @fn init
@@ -237,6 +241,8 @@ public:
    */
   void setColorWhite(){setRGB(255, 255, 255);}
 
+  void printstr(const char* str);
+
   /**
    * @fn write
    * @brief write character
@@ -260,6 +266,8 @@ public:
   using Print::write;
   
 private:
+  void i2c_master_init();
+
   /**
    * @fn begin
    * @brief the initialization function
