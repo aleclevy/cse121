@@ -156,7 +156,24 @@ void send_mouse(uint8_t buttons, char dx, char dy, char wheel)
     buffer[3] = wheel;
     esp_hidd_dev_input_set(s_ble_hid_param.hid_dev, 0, 0, buffer, 4);
 }
-
+void ble_hid_demo_task_mouse(void *pvParameters)
+{
+    while (1) {
+        // Move right
+        for (int i = 0; i < 20; i++) {
+            send_mouse(0, 50, 0, 0);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+        }
+        // Move left
+        for (int i = 0; i < 20; i++) {
+            send_mouse(0, -50, 0, 0);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
+        }
+        // 5 second pause
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+    }
+}
+/*
 void ble_hid_demo_task_mouse(void *pvParameters)
 {
     static const char* help_string = "########################################################################\n"\
@@ -178,7 +195,7 @@ void ble_hid_demo_task_mouse(void *pvParameters)
 	    vTaskDelay(50 / portTICK_PERIOD_MS);
 	    send_mouse(0, 10, 0, 0);
     }
-}
+}*/
 #endif
 
 #if CONFIG_EXAMPLE_HID_DEVICE_ROLE && CONFIG_EXAMPLE_HID_DEVICE_ROLE == 2
