@@ -828,6 +828,46 @@ CONFIG_EXAMPLE_HID_DEVICE_ROLE=3
 # end of HID Example Configuration
 
 #
+# Sensor Hub Options
+#
+
+#
+# Sensor Build Options
+#
+# default:
+CONFIG_SENSOR_INCLUDED_IMU=y
+# default:
+CONFIG_SENSOR_INCLUDED_HUMITURE=y
+# default:
+CONFIG_SENSOR_INCLUDED_LIGHT=y
+# end of Sensor Build Options
+
+#
+# Sensor Task Options
+#
+# default:
+CONFIG_SENSOR_TASK_PRIORITY_INHERIT=y
+# default:
+CONFIG_SENSOR_TASK_STACK_SIZE=4096
+# end of Sensor Task Options
+
+#
+# Sensor Event Loop Options
+#
+# default:
+CONFIG_SENSORS_EVENT_TASK_PRIORITY_INHERIT=y
+# default:
+CONFIG_SENSOR_EVENT_LOOP_AUTO=y
+# default:
+CONFIG_SENSORS_EVENT_QUEUE_SIZE=32
+# default:
+CONFIG_SENSORS_EVENT_STACK_SIZE=4096
+# default:
+# CONFIG_SENSOR_DEFAULT_HANDLER is not set
+# end of Sensor Event Loop Options
+# end of Sensor Hub Options
+
+#
 # Compiler options
 #
 # default:
@@ -1522,6 +1562,31 @@ CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT=y
 # CONFIG_BLE_MESH is not set
 
 #
+# Legacy Driver Configurations
+#
+
+#
+# Legacy TWAI Driver Configurations
+#
+# default:
+# CONFIG_TWAI_ISR_IN_IRAM_LEGACY is not set
+# default:
+# CONFIG_TWAI_SUPPRESS_DEPRECATE_WARN is not set
+# default:
+# CONFIG_TWAI_SKIP_LEGACY_CONFLICT_CHECK is not set
+# end of Legacy TWAI Driver Configurations
+
+#
+# Legacy I2C Driver Configurations
+#
+# default:
+# CONFIG_I2C_SUPPRESS_DEPRECATE_WARN is not set
+# default:
+# CONFIG_I2C_SKIP_LEGACY_CONFLICT_CHECK is not set
+# end of Legacy I2C Driver Configurations
+# end of Legacy Driver Configurations
+
+#
 # eFuse Bit Manager
 #
 # default:
@@ -1571,6 +1636,17 @@ CONFIG_GDMA_OBJ_DRAM_SAFE=y
 # default:
 # CONFIG_GPIO_CTRL_FUNC_IN_IRAM is not set
 # end of ESP-Driver:GPIO Configurations
+
+#
+# ESP-Driver:I2C Configurations
+#
+# default:
+# CONFIG_I2C_ISR_IRAM_SAFE is not set
+# default:
+# CONFIG_I2C_ENABLE_DEBUG_LOG is not set
+# default:
+CONFIG_I2C_MASTER_ISR_HANDLER_IN_IRAM=y
+# end of ESP-Driver:I2C Configurations
 
 #
 # ESP-Driver:SPI Configurations
@@ -3513,6 +3589,43 @@ CONFIG_VFS_SEMIHOSTFS_MAX_MOUNT_POINTS=1
 # default:
 CONFIG_VFS_INITIALIZE_DEV_NULL=y
 # end of Virtual file system
+
+#
+# CMake Utilities
+#
+# default:
+# CONFIG_CU_RELINKER_ENABLE is not set
+# default:
+# CONFIG_CU_DIAGNOSTICS_COLOR_NEVER is not set
+# default:
+CONFIG_CU_DIAGNOSTICS_COLOR_ALWAYS=y
+# default:
+# CONFIG_CU_DIAGNOSTICS_COLOR_AUTO is not set
+# default:
+# CONFIG_CU_GCC_LTO_ENABLE is not set
+# default:
+# CONFIG_CU_GCC_STRING_1BYTE_ALIGN is not set
+# end of CMake Utilities
+
+#
+# Bus Options
+#
+
+#
+# I2C Bus Options
+#
+# default:
+CONFIG_I2C_BUS_DYNAMIC_CONFIG=y
+# default:
+CONFIG_I2C_MS_TO_WAIT=200
+# default:
+# CONFIG_I2C_BUS_BACKWARD_CONFIG is not set
+# default:
+# CONFIG_I2C_BUS_SUPPORT_SOFTWARE is not set
+# default:
+# CONFIG_I2C_BUS_REMOVE_NULL_MEM_ADDR is not set
+# end of I2C Bus Options
+# end of Bus Options
 # end of Component config
 
 CONFIG_IDF_EXPERIMENTAL_FEATURES=y
