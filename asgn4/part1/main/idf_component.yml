@@ -1,0 +1,10 @@
+version: 1.0.0
+description: default
+dependencies:
+  esp-idf-lib/icm42670:
+    version: "*"
+    override_path: "/home/alevy1/esp/icm42670"
+  esp-idf-lib/i2cdev:
+    version: "*"
+  esp-idf-lib/esp_idf_lib_helpers:
+    version: "*"
