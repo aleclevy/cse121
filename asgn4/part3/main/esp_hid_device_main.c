@@ -86,7 +86,7 @@ const unsigned char mouseReportMap[] = {
 #ifndef APP_CPU_NUM
 #define APP_CPU_NUM PRO_CPU_NUM
 #endif
-
+#define BOOT_BUTTON_GPIO 9
 #define LOOP_MS     100
 #define THRESH_BIT  3000
 #define THRESH_LOT  10000
@@ -108,6 +108,14 @@ void send_mouse(uint8_t buttons, char dx, char dy, char wheel)
 
 void ble_hid_demo_task_mouse(void *pvParameters)
 {
+gpio_config_t io_conf = {
+    .pin_bit_mask = (1ULL << BOOT_BUTTON_GPIO),
+    .mode = GPIO_MODE_INPUT,
+    .pull_up_en = GPIO_PULLUP_ENABLE,
+    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+    .intr_type = GPIO_INTR_DISABLE,
+};
+gpio_config(&io_conf);
     const char *TAG = "icm42670";
 
     icm42670_t dev = { 0 };
@@ -203,6 +211,20 @@ void ble_hid_demo_task_mouse(void *pvParameters)
         if (s_connected && (dx != 0 || dy != 0)) {
             send_mouse(0, dx, dy, 0);
         }
+
+	// Boot button click (GPIO9, active low)
+static bool btn_click_sent = false;
+if (gpio_get_level(BOOT_BUTTON_GPIO) == 0 && !btn_click_sent) {
+    ESP_LOGI(TAG, "BOOT BUTTON CLICK");
+    if (s_connected) {
+        send_mouse(0x01, 0, 0, 0);  // button down
+        vTaskDelay(pdMS_TO_TICKS(50));
+        send_mouse(0x00, 0, 0, 0);  // button up
+    }
+    btn_click_sent = true;
+} else if (gpio_get_level(BOOT_BUTTON_GPIO) == 1) {
+    btn_click_sent = false;
+}
     }
 }
 
