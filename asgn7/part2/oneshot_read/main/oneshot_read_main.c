@@ -11,18 +11,19 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "soc/soc_caps.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 
 const static char *TAG = "EXAMPLE";
 
 static const char *MORSE[] = {
-    ".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---",
-    "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-",
-    "..-", "...-", ".--", "-..-", "-.--", "--..",
-    "-----", ".----", "..---", "...--", "....-", ".....", "-....", "--...", "---..", "----."};
+    ".-",    "-...",  "-.-.",  "-..",   ".",     "..-.",  "--.",   "....",
+    "..",    ".---",  "-.-",   ".-..",  "--",    "-.",    "---",   ".--.",
+    "--.-",  ".-.",   "...",   "-",     "..-",   "...-",  ".--",   "-..-",
+    "-.--",  "--..",  "-----", ".----", "..---", "...--", "....-", ".....",
+    "-....", "--...", "---..", "----."};
 static const char SYMBOLS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 #define MORSE_COUNT 36
 
@@ -62,8 +63,7 @@ static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 static void convertToEnglish_Text(const char *text, char *out);
 static void convertToEnglish_Word(const char *morse, char *out);
 static char decode_symbol(const char *code);
-void app_main(void)
-{
+void app_main(void) {
   //-------------ADC1 Init---------------//
   adc_oneshot_unit_handle_t adc1_handle;
   adc_oneshot_unit_init_cfg_t init_config1 = {
@@ -91,13 +91,14 @@ void app_main(void)
       example_adc_calibration_init(ADC_UNIT_1, EXAMPLE_ADC1_CHAN1,
                                    EXAMPLE_ADC_ATTEN, &adc1_cali_chan1_handle);
 
-#define UNIT_MS 100
+#define UNIT_MS 60
 #define THRESHOLD_RAW 1500
-#define DOT_MS 150
+#define DOT_MS 60
 
-#define DOT_DASH_THRESHOLD 300
-#define LETTER_GAP_THRESHOLD 300
-#define WORD_GAP_THRESHOLD 750
+#define DOT_DASH_THRESHOLD 120
+#define LETTER_GAP_THRESHOLD 120
+#define WORD_GAP_THRESHOLD 300
+#define SENTENCE_THRESHOLD 600
   ESP_ERROR_CHECK(
       adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN1, &adc_raw[0][1]));
 
@@ -110,48 +111,36 @@ void app_main(void)
   char morseRaw[600];
   morseRaw[0] = '\0';
   char decoded[300];
-  while (1)
-  {
+  while (1) {
     ESP_ERROR_CHECK(
         adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN1, &adc_raw[0][1]));
     bool lit = (adc_raw[0][1] > THRESHOLD_RAW);
     int64_t now_us = esp_timer_get_time();
-    if (lit != last_state)
-    {
+    if (lit != last_state) {
       int64_t duration_ms = (now_us - last_change_us) / 1000;
-      if (!lit)
-      {
+      if (!lit) {
         char sym = (duration_ms < DOT_DASH_THRESHOLD) ? '.' : '-';
-        if (cl < (int)sizeof(currentLetter) - 1)
-        {
+        if (cl < (int)sizeof(currentLetter) - 1) {
           currentLetter[cl++] = sym;
           currentLetter[cl] = '\0';
         }
         ESP_LOGI(TAG, "%c (%lld ms)", sym, duration_ms);
-      }
-      else
-      {
-        if (duration_ms < LETTER_GAP_THRESHOLD)
-        {
-        }
-        else
-        {
-          if (cl > 0)
-          {
+      } else {
+        if (duration_ms < LETTER_GAP_THRESHOLD) {
+        } else {
+          if (cl > 0) {
             strcat(morseRaw, currentLetter);
             strcat(morseRaw, " ");
             cl = 0;
             currentLetter[0] = '\0';
           }
-          if (duration_ms >= WORD_GAP_THRESHOLD)
-          {
+          if (duration_ms >= WORD_GAP_THRESHOLD) {
             strcat(morseRaw, "/ ");
             ESP_LOGI(TAG, "WORD END");
-          }
-          else
-          {
+          } else {
             ESP_LOGI(TAG, "LETTER END");
           }
+          /* decode everything received so far */
           convertToEnglish_Text(morseRaw, decoded);
           ESP_LOGI(TAG, "DECODED: \"%s\"", decoded);
           if (strlen(morseRaw) > sizeof(morseRaw) - 40)
@@ -160,24 +149,31 @@ void app_main(void)
       }
       last_state = lit;
       last_change_us = now_us;
+    } else if ((now_us - last_change_us)/1000 >= SENTENCE_THRESHOLD &&
+               (cl > 0 || morseRaw[0] != '\0')) {
+      if (cl > 0) {
+        strcat(morseRaw, currentLetter);
+        cl = 0;
+        currentLetter[0] = '\0';
+      }
+      convertToEnglish_Text(morseRaw, decoded);
+      ESP_LOGI(TAG, "DECODED (final): \"%s\"", decoded);
+      morseRaw[0] = '\0'; // clear the accumulator, not the output
     }
     vTaskDelay(pdMS_TO_TICKS(10));
   }
   // Tear Down
   ESP_ERROR_CHECK(adc_oneshot_del_unit(adc1_handle));
-  if (do_calibration1_chan0)
-  {
+  if (do_calibration1_chan0) {
     example_adc_calibration_deinit(adc1_cali_chan0_handle);
   }
-  if (do_calibration1_chan1)
-  {
+  if (do_calibration1_chan1) {
     example_adc_calibration_deinit(adc1_cali_chan1_handle);
   }
 }
 
 /*conversion of morse code to english text*/
-static void convertToEnglish_Text(const char *text, char *out)
-{
+static void convertToEnglish_Text(const char *text, char *out) {
   out[0] = '\0';
   char buf[600];
   strncpy(buf, text, sizeof(buf) - 1);
@@ -185,8 +181,7 @@ static void convertToEnglish_Text(const char *text, char *out)
   char *save = NULL;
   char *word = strtok_r(buf, "/", &save);
   bool first = true;
-  while (word != NULL)
-  {
+  while (word != NULL) {
     if (!first)
       strcat(out, " ");
     first = false;
@@ -194,15 +189,13 @@ static void convertToEnglish_Text(const char *text, char *out)
     word = strtok_r(NULL, "/", &save);
   }
 }
-static void convertToEnglish_Word(const char *morse, char *out)
-{
+static void convertToEnglish_Word(const char *morse, char *out) {
   char buf[256];
   strncpy(buf, morse, sizeof(buf) - 1);
   buf[sizeof(buf) - 1] = '\0';
   char *save = NULL;
   char *letter = strtok_r(buf, " ", &save);
-  while (letter != NULL)
-  {
+  while (letter != NULL) {
     size_t len = strlen(out);
     out[len] = decode_symbol(letter); // see #6
     out[len + 1] = '\0';
@@ -210,8 +203,7 @@ static void convertToEnglish_Word(const char *morse, char *out)
   }
 }
 
-static char decode_symbol(const char *code)
-{
+static char decode_symbol(const char *code) {
   for (int i = 0; i < MORSE_COUNT; ++i)
     if (strcmp(code, MORSE[i]) == 0)
       return SYMBOLS[i];
@@ -223,15 +215,13 @@ static char decode_symbol(const char *code)
   ---------------------------------------------------------------*/
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel,
                                          adc_atten_t atten,
-                                         adc_cali_handle_t *out_handle)
-{
+                                         adc_cali_handle_t *out_handle) {
   adc_cali_handle_t handle = NULL;
   esp_err_t ret = ESP_FAIL;
   bool calibrated = false;
 
 #if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
-  if (!calibrated)
-  {
+  if (!calibrated) {
     ESP_LOGI(TAG, "calibration scheme version is %s", "Curve Fitting");
     adc_cali_curve_fitting_config_t cali_config = {
         .unit_id = unit,
@@ -240,16 +230,14 @@ static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
     };
     ret = adc_cali_create_scheme_curve_fitting(&cali_config, &handle);
-    if (ret == ESP_OK)
-    {
+    if (ret == ESP_OK) {
       calibrated = true;
     }
   }
 #endif
 
 #if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
-  if (!calibrated)
-  {
+  if (!calibrated) {
     ESP_LOGI(TAG, "calibration scheme version is %s", "Line Fitting");
     adc_cali_line_fitting_config_t cali_config = {
         .unit_id = unit,
@@ -257,32 +245,25 @@ static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
     };
     ret = adc_cali_create_scheme_line_fitting(&cali_config, &handle);
-    if (ret == ESP_OK)
-    {
+    if (ret == ESP_OK) {
       calibrated = true;
     }
   }
 #endif
 
   *out_handle = handle;
-  if (ret == ESP_OK)
-  {
+  if (ret == ESP_OK) {
     ESP_LOGI(TAG, "Calibration Success");
-  }
-  else if (ret == ESP_ERR_NOT_SUPPORTED || !calibrated)
-  {
+  } else if (ret == ESP_ERR_NOT_SUPPORTED || !calibrated) {
     ESP_LOGW(TAG, "eFuse not burnt, skip software calibration");
-  }
-  else
-  {
+  } else {
     ESP_LOGE(TAG, "Invalid arg or no memory");
   }
 
   return calibrated;
 }
 
-static void example_adc_calibration_deinit(adc_cali_handle_t handle)
-{
+static void example_adc_calibration_deinit(adc_cali_handle_t handle) {
 #if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
   ESP_LOGI(TAG, "deregister %s calibration scheme", "Curve Fitting");
   ESP_ERROR_CHECK(adc_cali_delete_scheme_curve_fitting(handle));

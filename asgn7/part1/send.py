@@ -3,7 +3,7 @@ from time import sleep
 import sys
 
 led1 = LED(17)
-UNIT = 0.15
+UNIT = 0.06
 
 def flash_letter(symbols):
     for i, symbol in enumerate(symbols):
@@ -19,10 +19,8 @@ def flash_message(message):
             if letter in morse_code_dict:
                 flash_letter(morse_code_dict[letter])
             if l < len(word) - 1:
-                print(f"  inter-letter gap after {letter}")
                 sleep(UNIT * 3)
         if w < len(words) - 1:
-            print(f"  word gap")
             sleep(UNIT * 7)
 
 morse_code_dict = {
@@ -38,9 +36,6 @@ morse_code_dict = {
 }
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python morse.py <message>")
-        sys.exit(1)
     numTx =int( sys.argv[1])
     message = " ".join(sys.argv[2:])
     print(f"Message: {message}")
